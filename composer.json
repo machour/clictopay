@@ -1,0 +1,26 @@
+{
+    "name": "machour/clictopay",
+    "type": "library",
+    "description": "ClicToPay PHP SDK",
+    "keywords": [
+        "clictopay",
+        "payment",
+	"smt",
+        "tunisia"
+    ],
+    "homepage": "http://www.clictopay.com.tn/",
+    "license": "BSD-3-Clause",
+    "support": {
+        "issues": "https://github.com/machour/clictopay/issues?state=open",
+        "source": "https://github.com/machour/clictopay"
+    },
+    "require": {
+        "php": "^7.3|^7.4|^8.0",
+        "ext-json": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Machour\\ClicToPay\\": "src"
+        }
+    }
+}
