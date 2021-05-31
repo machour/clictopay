@@ -32,4 +32,9 @@ class Response
         return !$this->errorCode;
     }
 
+    public function getData(): array
+    {
+        return $this->_data;
+    }
+
 }
