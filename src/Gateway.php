@@ -134,7 +134,7 @@ class Gateway
         /** @var Response $response */
         $response = new $response($data);
         if (!$response->isOk()) {
-            throw new Exception($response->errorMessage, $response->errorCode);
+            throw new Exception($response->errorMessage, (int)$response->errorCode);
         }
 
         return $response;
