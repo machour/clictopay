@@ -13,7 +13,7 @@
     <a href="https://packagist.org/packages/machour/clictopay"><img src="https://img.shields.io/packagist/l/machour/clictopay" alt="License"></a>
 </p>
 
-A modern, type-safe PHP SDK for ClicToPay payment gateway integration. **Framework-agnostic** - works with any PHP 8.1+ project (Laravel, Symfony, WordPress, or vanilla PHP).
+A modern, type-safe PHP SDK for ClicToPay payment gateway integration. **Framework-agnostic** - works with any PHP 8.3+ project (Laravel, Symfony, WordPress, or vanilla PHP).
 
 ## Features
 
@@ -28,7 +28,7 @@ composer require machour/clictopay
 
 ## Requirements
 
-- PHP 8.1 or higher
+- PHP 8.3 or higher
 - Guzzle HTTP client (installed automatically)
 
 ## Quick Start
