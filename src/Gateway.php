@@ -1,157 +1,125 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Machour\ClicToPay;
 
-use Machour\ClicToPay\Response\ExtendedStatusResponse;
-use Machour\ClicToPay\Response\Response;
-use Machour\ClicToPay\Response\StatusResponse;
-use Machour\ClicToPay\Response\UrlResponse;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+use Machour\ClicToPay\Endpoints\Cancel;
+use Machour\ClicToPay\Endpoints\Deposit;
+use Machour\ClicToPay\Endpoints\ExtendedStatus;
+use Machour\ClicToPay\Endpoints\PreAuthorize;
+use Machour\ClicToPay\Endpoints\Refund;
+use Machour\ClicToPay\Endpoints\Register;
+use Machour\ClicToPay\Endpoints\Status;
+use Machour\ClicToPay\Reponses\ExtendedStatusResponse;
+use Machour\ClicToPay\Reponses\Response;
+use Machour\ClicToPay\Reponses\StatusResponse;
+use Machour\ClicToPay\Reponses\UrlResponse;
+use Spatie\LaravelData\Data;
 
 class Gateway
 {
-    private $login;
-    private $password;
-    private $endpoint;
+    private Client $client;
 
-    public function __construct($login, $password, $testMode = false)
+    public function __construct(
+        public string $login,
+        public string $password,
+        public string $endpoint,
+        ?Client $client = null,
+    ) {
+        $this->client = $client ?? new Client();
+    }
+
+    public static function make(string $login, string $password, bool $testMode = false): self
     {
-        $this->login = $login;
-        $this->password = $password;
-        $this->endpoint = 'https://' . ($testMode ? 'test' : 'ipay') . '.clictopay.com/payment/rest/';
+        $endpoint = 'https://' . ($testMode ? 'test' : 'ipay') . '.clictopay.com/payment/rest/';
+
+        return new self($login, $password, $endpoint);
     }
 
     /**
-     * Authorization request
-     *
-     * @param array $params
-     * @return UrlResponse
      * @throws Exception
      */
-    public function register(array $params): UrlResponse
+    public function register(Register $data): UrlResponse
     {
-        $this->assertParams(['orderNumber', 'amount', 'returnUrl'], $params);
-
-        return $this->callApi('register.do', $params, UrlResponse::class);
+        return UrlResponse::from($this->callApi('register.do', $data));
     }
 
     /**
-     * @param array $params
-     * @return UrlResponse
      * @throws Exception
      */
-    public function preAuthorize(array $params): UrlResponse
+    public function preAuthorize(PreAuthorize $data): UrlResponse
     {
-        $this->assertParams(['amount', 'orderNumber'], $params);
-
-        return $this->callApi('registerPreAuth.do', $params, UrlResponse::class);
+        return UrlResponse::from($this->callApi('registerPreAuth.do', $data));
     }
 
     /**
-     * @param array $params
-     * @return Response
      * @throws Exception
      */
-    public function deposit(array $params): Response
+    public function deposit(Deposit $data): Response
     {
-        $this->assertParams(['amount', 'orderNumber'], $params);
-
-        return $this->callApi('deposit.do', $params, Response::class);
+        return Response::from($this->callApi('deposit.do', $data));
     }
 
     /**
-     * @param array $params
-     * @return Response
      * @throws Exception
      */
-    public function cancel(array $params): Response
+    public function cancel(Cancel $data): Response
     {
-        $this->assertParams(['orderId'], $params);
-
-        return $this->callApi('reverse.do', $params, Response::class);
-    }
-
-
-    /**
-     * @param array $params
-     * @return Response
-     * @throws Exception
-     */
-    public function refund(array $params): Response
-    {
-        $this->assertParams(['orderId', 'amount'], $params);
-
-        return $this->callApi('refund.do', $params, Response::class);
-    }
-
-
-    /**
-     * @param array $params
-     * @return StatusResponse
-     * @throws Exception
-     */
-    public function status(array $params): StatusResponse
-    {
-        $this->assertParams(['orderId'], $params);
-
-        return $this->callApi('getOrderStatus.do', $params, StatusResponse::class);
+        return Response::from($this->callApi('reverse.do', $data));
     }
 
     /**
-     * @param array $params
-     * @return ExtendedStatusResponse
      * @throws Exception
      */
-    public function extendedStatus(array $params): ExtendedStatusResponse
+    public function refund(Refund $data): Response
     {
-        $this->assertParams(['orderId', 'orderNumber'], $params);
-
-        return $this->callApi('getOrderStatusExtended.do', $params, ExtendedStatusResponse::class);
+        return Response::from($this->callApi('refund.do', $data));
     }
 
-
     /**
-     * @param string $query
-     * @param array $params
-     * @param string $response
-     *
-     * @noinspection PhpReturnDocTypeMismatchInspection
-     * @return Response|UrlResponse|StatusResponse|ExtendedStatusResponse
      * @throws Exception
      */
-    private function callApi(string $query, array $params, string $response)
+    public function status(Status $data): StatusResponse
     {
-        $params = array_merge([
+        return StatusResponse::from($this->callApi('getOrderStatus.do', $data));
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function extendedStatus(ExtendedStatus $data): ExtendedStatusResponse
+    {
+        return ExtendedStatusResponse::from($this->callApi('getOrderStatusExtended.do', $data));
+    }
+
+    /**
+     * @throws \Machour\ClicToPay\Exception
+     */
+    private function callApi(string $query, Data $requestData): array
+    {
+        $params = [
             'userName' => $this->login,
             'password' => $this->password,
             'language' => 'fr',
             'currency' => 788,
-        ], $params);
+            ...$requestData->toArray(),
+        ];
 
-        $data = file_get_contents($this->endpoint . $query . '?' . http_build_query($params));
+        try {
+            $response = $this->client->get($this->endpoint . $query, [
+                'query' => $params,
+            ]);
+            
+            $data = json_decode($response->getBody()->getContents(), true);
 
-        /** @var Response $response */
-        $response = new $response($data);
-        if (!$response->isOk()) {
-            throw new Exception($response->errorMessage, (int)$response->errorCode);
-        }
-
-        return $response;
-    }
-
-    /**
-     * @param array $required
-     * @param array $params
-     * @throws Exception
-     */
-    private function assertParams(array $required, array $params)
-    {
-        foreach ($required as $key) {
-            if (!array_key_exists($key, $params)) {
-                throw new Exception("You must provide the `$key` parameter.");
+            if ($data === null) {
+                throw new \Exception('Invalid response from payment gateway');
             }
+
+            return $data;
+        } catch (GuzzleException $e) {
+            throw new Exception('Erreur lors de la communication avec le serveur de paiement ClicToPay: ' . $e->getMessage());
         }
     }
 }
-
