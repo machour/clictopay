@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Machour\ClicToPay\Data;
+namespace Machour\ClicToPay\Reponses;
 
-class ExtendedStatusResponseData extends ResponseData
+class ExtendedStatusResponse extends Response
 {
     public function __construct(
         public ?string $orderNumber = null,

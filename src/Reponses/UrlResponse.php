@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Machour\ClicToPay\Data;
+namespace Machour\ClicToPay\Reponses;
 
-class UrlResponseData extends ResponseData
+class UrlResponse extends Response
 {
     public function __construct(
         public ?string $orderId = null,

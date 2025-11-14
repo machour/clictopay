@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Machour\ClicToPay\Data;
+namespace Machour\ClicToPay\Endpoints;
 
 use Spatie\LaravelData\Attributes\Validation\Min;
 use Spatie\LaravelData\Attributes\Validation\Numeric;
@@ -10,7 +10,7 @@ use Spatie\LaravelData\Attributes\Validation\Required;
 use Spatie\LaravelData\Attributes\Validation\Url;
 use Spatie\LaravelData\Data;
 
-class PreAuthorizeData extends Data
+class Register extends Data
 {
     public function __construct(
         #[Required]
@@ -27,5 +27,6 @@ class PreAuthorizeData extends Data
         public ?string $clientId = null,
         public ?array $jsonParams = null,
         public ?int $sessionTimeoutSecs = null,
+        public ?string $bindingId = null,
     ) {}
 }

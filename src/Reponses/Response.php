@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Machour\ClicToPay\Data;
+namespace Machour\ClicToPay\Reponses;
 
 use Machour\ClicToPay\Exception;
 use Spatie\LaravelData\Data;
 
-class ResponseData extends Data
+class Response extends Data
 {
     public function __construct(
         public ?string $errorMessage = null,

@@ -2,27 +2,33 @@
 
 namespace Machour\ClicToPay;
 
-use Machour\ClicToPay\Data\CancelData;
-use Machour\ClicToPay\Data\DepositData;
-use Machour\ClicToPay\Data\ExtendedStatusData;
-use Machour\ClicToPay\Data\ExtendedStatusResponseData;
-use Machour\ClicToPay\Data\PreAuthorizeData;
-use Machour\ClicToPay\Data\RefundData;
-use Machour\ClicToPay\Data\RegisterData;
-use Machour\ClicToPay\Data\ResponseData;
-use Machour\ClicToPay\Data\StatusData;
-use Machour\ClicToPay\Data\StatusResponseData;
-use Machour\ClicToPay\Data\UrlResponseData;
-use Illuminate\Support\Facades\Http;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
+use Machour\ClicToPay\Endpoints\Cancel;
+use Machour\ClicToPay\Endpoints\Deposit;
+use Machour\ClicToPay\Endpoints\ExtendedStatus;
+use Machour\ClicToPay\Endpoints\PreAuthorize;
+use Machour\ClicToPay\Endpoints\Refund;
+use Machour\ClicToPay\Endpoints\Register;
+use Machour\ClicToPay\Endpoints\Status;
+use Machour\ClicToPay\Reponses\ExtendedStatusResponse;
+use Machour\ClicToPay\Reponses\Response;
+use Machour\ClicToPay\Reponses\StatusResponse;
+use Machour\ClicToPay\Reponses\UrlResponse;
 use Spatie\LaravelData\Data;
 
 class Gateway
 {
+    private Client $client;
+
     public function __construct(
         public string $login,
         public string $password,
         public string $endpoint,
-    ) {}
+        ?Client $client = null,
+    ) {
+        $this->client = $client ?? new Client();
+    }
 
     public static function make(string $login, string $password, bool $testMode = false): self
     {
@@ -34,57 +40,57 @@ class Gateway
     /**
      * @throws Exception
      */
-    public function register(RegisterData $data): UrlResponseData
+    public function register(Register $data): UrlResponse
     {
-        return UrlResponseData::from($this->callApi('register.do', $data));
+        return UrlResponse::from($this->callApi('register.do', $data));
     }
 
     /**
      * @throws Exception
      */
-    public function preAuthorize(PreAuthorizeData $data): UrlResponseData
+    public function preAuthorize(PreAuthorize $data): UrlResponse
     {
-        return UrlResponseData::from($this->callApi('registerPreAuth.do', $data));
+        return UrlResponse::from($this->callApi('registerPreAuth.do', $data));
     }
 
     /**
      * @throws Exception
      */
-    public function deposit(DepositData $data): ResponseData
+    public function deposit(Deposit $data): Response
     {
-        return ResponseData::from($this->callApi('deposit.do', $data));
+        return Response::from($this->callApi('deposit.do', $data));
     }
 
     /**
      * @throws Exception
      */
-    public function cancel(CancelData $data): ResponseData
+    public function cancel(Cancel $data): Response
     {
-        return ResponseData::from($this->callApi('reverse.do', $data));
+        return Response::from($this->callApi('reverse.do', $data));
     }
 
     /**
      * @throws Exception
      */
-    public function refund(RefundData $data): ResponseData
+    public function refund(Refund $data): Response
     {
-        return ResponseData::from($this->callApi('refund.do', $data));
+        return Response::from($this->callApi('refund.do', $data));
     }
 
     /**
      * @throws Exception
      */
-    public function status(StatusData $data): StatusResponseData
+    public function status(Status $data): StatusResponse
     {
-        return StatusResponseData::from($this->callApi('getOrderStatus.do', $data));
+        return StatusResponse::from($this->callApi('getOrderStatus.do', $data));
     }
 
     /**
      * @throws Exception
      */
-    public function extendedStatus(ExtendedStatusData $data): ExtendedStatusResponseData
+    public function extendedStatus(ExtendedStatus $data): ExtendedStatusResponse
     {
-        return ExtendedStatusResponseData::from($this->callApi('getOrderStatusExtended.do', $data));
+        return ExtendedStatusResponse::from($this->callApi('getOrderStatusExtended.do', $data));
     }
 
     /**
@@ -101,15 +107,18 @@ class Gateway
         ];
 
         try {
-            $rawResponse = Http::get($this->endpoint . $query, $params);
-            $data = $rawResponse->json();
+            $response = $this->client->get($this->endpoint . $query, [
+                'query' => $params,
+            ]);
+            
+            $data = json_decode($response->getBody()->getContents(), true);
 
             if ($data === null) {
                 throw new \Exception('Invalid response from payment gateway');
             }
 
             return $data;
-        } catch (\Exception $e) {
+        } catch (GuzzleException $e) {
             throw new Exception('Erreur lors de la communication avec le serveur de paiement ClicToPay: ' . $e->getMessage());
         }
     }
